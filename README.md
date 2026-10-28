@@ -100,6 +100,17 @@ The GPU power-limit wrapper can also be used independently of ComfyUI:
 
 The reported wattage is a **power limit, not measured consumption**. The CSV measures end-to-end elapsed time for one image per power limit; it does **not** measure joules, electricity cost, or statistically validated performance. Results can be affected by warm-up, background processes, temperatures, and the workflow itself.
 
+### Cold starts and warm-up
+
+The first image generated after starting ComfyUI may take
+significantly longer due to model loading, CUDA initialization,
+and other startup operations.
+
+For more consistent benchmark results, generate one image
+using your workflow before starting `./batch-run.sh`.
+
+The benchmark does not perform an automatic warm-up.
+
 ## License
 
 MIT. See `LICENSE`.
