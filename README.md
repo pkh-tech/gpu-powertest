@@ -4,7 +4,7 @@
 
 **WARNING: USE AT YOUR OWN RISK.** This tool temporarily changes NVIDIA GPU power limits using `sudo nvidia-smi`. The author accepts no responsibility for hardware damage, instability, data loss, or other consequences of using or modifying these scripts. Verify what you run on your own system. Provided **AS IS**, without warranty. See `LICENSE`.
 
-A deliberately small, hackable collection of Bash scripts for comparing ComfyUI image-generation times at different GPU power limits. No installer, no configuration framework, no multi-GPU support.
+A deliberately small, hackable collection of scripts for comparing ComfyUI image-generation times at different GPU power limits. No installer, no configuration framework, no multi-GPU support.
 
 Tested on a **single NVIDIA RTX 3080** under Linux. Other NVIDIA cards may work, but have not been validated here. **GPU 0** is used by default; ensure ComfyUI uses the same GPU if you have several.
 
@@ -12,6 +12,7 @@ Tested on a **single NVIDIA RTX 3080** under Linux. Other NVIDIA cards may work,
 
 - A working NVIDIA driver and `nvidia-smi` with permission to change power limits via `sudo`
 - Bash, `awk`, `jq`, `curl`, `zip`, `sudo`, and `mktemp`
+- Python 3 (standard library only) for the optional HTML report generator
 - **ComfyUI already running** with its API at `http://127.0.0.1:8188`
 - A compatible **API-format** ComfyUI workflow saved as `teapot_api.json`
 
@@ -30,6 +31,44 @@ chmod +x *.sh
 
 The run writes `output/results.csv` and images to `output/`, then creates a timestamped `results-*.zip` in this folder. Temporary workflow files are also created and removed here. ComfyUI itself may still save images and internal data in its own configured directories.
 
+## HTML Report
+
+The optional `generate-report.py` script converts benchmark results into a standalone HTML report.
+
+The report includes:
+
+- An SVG graph showing image-generation time across GPU power limits.
+- A summary of the fastest observed result and performance improvements.
+- A table containing all benchmark measurements.
+- A gallery of the generated images.
+- Notes explaining the limitations of the measurements.
+
+After completing a benchmark, generate the report with:
+
+```bash
+./generate-report.py
+```
+
+Open the report in your browser:
+
+```bash
+xdg-open output/report.html
+```
+
+The report generator uses only the **Python 3 standard library**. No additional Python packages, JavaScript libraries, internet connection, or web server are required.
+
+The HTML report references image files in `output/`. Keep the report and its images together when moving or sharing the results.
+
+### Automatically generate a report
+
+If you want the report included in every benchmark ZIP archive, add this line immediately before the `zip` command in `batch-run.sh`:
+
+```bash
+./generate-report.py
+```
+
+This is optional. The report generator is deliberately kept independent of the benchmark scripts, so you can generate or regenerate reports without running another benchmark.
+
 ## Change settings
 
 Edit the scripts directly:
@@ -46,9 +85,18 @@ The scripts intentionally do not auto-configure multiple GPUs. To modify them fo
 
 ## How it works
 
+The project follows the Unix philosophy: small, independent tools that each perform one task and can be combined.
+
 - `gpu-load-lock.sh`: set a temporary power limit, run any command, restore the old limit on exit.
 - `teapot.sh`: submit an API workflow to ComfyUI, wait for completion, save the image and elapsed wall-clock time.
 - `batch-run.sh`: choose a sweep range, call the other scripts, and archive the results.
+- `generate-report.py`: read existing benchmark results and create a local HTML report with graphs, statistics, and images.
+
+The GPU power-limit wrapper can also be used independently of ComfyUI:
+
+```bash
+./gpu-load-lock.sh -limit 270 -command ./your-command.sh
+```
 
 The reported wattage is a **power limit, not measured consumption**. The CSV measures end-to-end elapsed time for one image per power limit; it does **not** measure joules, electricity cost, or statistically validated performance. Results can be affected by warm-up, background processes, temperatures, and the workflow itself.
 
